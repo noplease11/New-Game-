@@ -1,5 +1,6 @@
 #include <iostream>
 #include "windows.h"
+//#include "Header.h"
 using namespace std;
 
 
@@ -22,18 +23,52 @@ unsigned short GetChoice(unsigned short min, unsigned short max) {
 class Npc
 {
 protected:
+
     string name{ "персонаж" };
     unsigned int health{ 10 };
     float damage{ 5 };
     unsigned short lvl{ 1 };
+
 public:
-    virtual void GetInfo()
-    {
-        cout << "Имя - " << name << endl;
-        cout << "Здоровье - " << health << endl;
-        cout << "Урон - " << damage << endl;
-    }
+
+    Npc();
+    virtual void GetInfo();
     virtual void Create() {};
+    bool Save() {
+        ofstream saveSystem("save.bin", ios::binary);
+        if (saveSystem.is_open())
+        {
+            saveSystem.write(reinterpret_cast<const char*>(&name), sizeof(name));
+            saveSystem.write(reinterpret_cast<const char*>(&health), sizeof(health));
+            saveSystem.write(reinterpret_cast<const char*>(&damage), sizeof(damage));
+            saveSystem.write(reinterpret_cast<const char*>(&lvl), sizeof(lvl));
+            return true;
+        }
+        else
+        {
+            cout << "Сохранение не удалось\nПопробуйте позже\n";
+            return false;
+        }
+        saveSystem.close();
+    }
+    Npc Load() {
+        ifstream loadSystem("save.bin", ios::binary);
+        Npc npc; //временное хранилище для считывания из файла
+        if (loadSystem.is_open())
+        {
+            loadSystem.read(reinterpret_cast<char*>(&npc.name), sizeof(npc.name));
+            loadSystem.read(reinterpret_cast<char*>(&npc.health), sizeof(npc.health));
+            loadSystem.read(reinterpret_cast<char*>(&npc.damage), sizeof(npc.damage));
+            loadSystem.read(reinterpret_cast<cchar*>(&npc.lvl), sizeof(npc.lvl));
+        }
+        else
+        {
+            cout << "Связь с небесами нарушена\nПамять о ваших путешестивиях потеряна\n";
+            return npc;
+        }
+        loadSystem.close();
+        return npc;
+    };
 };
 
 class Warrior : public virtual Npc
@@ -171,6 +206,11 @@ public:
     void Create(Npc* player)
     {
         player->Create();
+       
+    }
+    void Save(Npc* player)
+    {
+        player->Save();
     }
 };
 
@@ -202,6 +242,7 @@ int main()
     {
         cout << "Расскажи о своих навыках\n\t1 - Воин\n\t2 - Волшебник\n\t3 - Паладин\n";
         choice = GetChoice(1, 3); // снова используем ту же функцию
+        
 
         switch (choice)
         {
@@ -218,12 +259,28 @@ int main()
     }
 
     delete warrior;
+    warrior = nullptr;
     delete warrior2;
+    warrior2 = nullptr;
     delete wizard1;
+    wizard1 = nullptr;
     delete wizard2;
+    wizard2 = nullptr;
     delete megaWizard;
+    megaWizard = nullptr;
     delete paladin;
+    paladin = nullptr;
     delete player;
+
+    cout << "Сделаем остановку тут\n\t1-сохранить игру\n2-продолжить\n";
+    unsigned short choice = GetChoice(1, 2);
+    if (choice == 1)
+    {
+        if (warrior != nullptr) player->Save(warrior);
+        if (warrior != nullptr) player->Save(megaWizard);
+        if (warrior != nullptr) player->Save(paladin);
+
+    }
 
     return 0;
 }
